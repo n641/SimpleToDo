@@ -5,114 +5,84 @@
  * @format
  */
 
-import React from 'react';
-import type {PropsWithChildren} from 'react';
-import {
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  useColorScheme,
-  View,
-} from 'react-native';
+import React, {useCallback, useState} from 'react';
+import {Alert, SafeAreaView, StyleSheet} from 'react-native';
+import ToDoList from './components/ToDoList';
+import {initialItems} from './constants/ToDoListData';
+import {toDoItem} from './types/ToDoTypes';
+import AddToDoInput from './components/AddToDoInput';
 
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
+/**
+ * App Component
+ *
+ * The main application component that manages the state of the to-do list and
+ * renders the AddToDoInput and ToDoList components.
+ *
+ * @returns {JSX.Element} The rendered component
+ */
 
-type SectionProps = PropsWithChildren<{
-  title: string;
-}>;
+/**
+ * removeToDo
+ *
+ * A memoized callback function to remove a to-do item by id.
+ *
+ * @param {number} id - The id of the to-do item to be removed
+ */
 
-function Section({children, title}: SectionProps): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
-  );
-}
+/**
+ * addToDo
+ *
+ * A memoized callback function to add a new to-do item.
+ *
+ * @param {string} newItemText - The text of the new to-do item
+ */
 
 function App(): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
+  // State to manage the list of to-do items
+  const [listOfToDo, setListOfToDo] = useState<toDoItem[]>(initialItems);
 
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
-  };
+  const removeToDo = useCallback((id: number) => {
+    setListOfToDo(prevItems => prevItems.filter(item => item.id !== id));
+  }, []);
+
+  const addToDo = useCallback(
+    (newItemText: string) => {
+      const isDuplicate = listOfToDo.some(
+        item =>
+          item.text.trim().toLocaleLowerCase() ===
+          newItemText.trim().toLocaleLowerCase(),
+      );
+      if (isDuplicate) {
+        Alert.alert(
+          'Duplicate Item',
+          'This item already exists in your to-do list.',
+        );
+        return;
+      }
+
+      const newItem: toDoItem = {
+        id: listOfToDo.length ? listOfToDo[listOfToDo.length - 1].id + 1 : 1,
+        text: newItemText,
+      };
+      setListOfToDo(prevItems => [...prevItems, newItem]);
+    },
+    [listOfToDo],
+  );
 
   return (
-    <SafeAreaView style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
-      />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <Header />
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
-        </View>
-      </ScrollView>
+    <SafeAreaView style={styles.container}>
+      <AddToDoInput addToDo={addToDo} />
+      <ToDoList removeToDo={removeToDo} listOfToDo={listOfToDo} />
     </SafeAreaView>
   );
 }
 
+export default App;
+
 const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-  },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-  },
-  highlight: {
-    fontWeight: '700',
+  container: {
+    flex: 1,
+    padding: 10,
+    backgroundColor: '#f5f5f5',
   },
 });
-
-export default App;
